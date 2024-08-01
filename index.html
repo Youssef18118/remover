@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Product Information Editor</title>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <style>
+        body { font-family: Arial, sans-serif; line-height: 1.6; padding: 20px; }
+        h1, h2 { color: #333; }
+        input[type="text"], input[type="file"], input[type="number"], input[type="range"] { width: 100%; padding: 10px; margin-bottom: 10px; }
+        button { background-color: #4CAF50; color: white; padding: 10px 20px; border: none; cursor: pointer; }
+        button:hover { background-color: #45a049; }
+        #result, #imageResult { margin-top: 20px; }
+        .text-area { margin-bottom: 10px; }
+        img { max-width: 100%; }
+    </style>
+</head>
+<body>
+    <h1>Product Information Editor</h1>
+    
+    <h2>Fetch Product Information</h2>
+    <input type="text" id="url" placeholder="Enter product URL">
+    <button onclick="fetchInfo()">Fetch Info</button>
+    <div id="result"></div>
+
+    <h2>Process Image</h2>
+    <input type="file" id="imageUpload" accept="image/*">
+    <input type="number" id="maxSize" value="2000" min="500" max="2000" step="100">
+    <input type="range" id="minConfidence" value="0.5" min="0" max="1" step="0.1">
+    <button onclick="processImage()">Process Image</button>
+    <div id="imageResult"></div>
+
+    <script>
+        let textAreas = [];
+        let originalImage = null;
+
+        function fetchInfo() {
+            const url = $('#url').val();
+            $.post('/fetch_info', {url: url}, function(data) {
+                $('#result').html('<h3>Fetched HTML Content:</h3><pre>' + data.html_content + '</pre>');
+            });
+        }
+
+        function processImage() {
+            const formData = new FormData();
+            formData.append('image', $('#imageUpload')[0].files[0]);
+            formData.append('max_size', $('#maxSize').val());
+            formData.append('min_confidence', $('#minConfidence').val());
+            
+            $.ajax({
+                url: '/process_image',
+                type: 'POST',
+                data: formData,
+                processData: false,
+                contentType: false,
+                success: function(data) {
+                    let html = '<h3>Processed Image:</h3>';
+                    html += '<img src="data:image/png;base64,' + data.image + '" style="max-width:100%;">';
+                    html += '<h3>Detected Text Areas:</h3>';
+                    textAreas = data.text_areas;
+                    originalImage = data.original_image;
+                    
+                    data.text_areas.forEach((area, index) => {
+                        html += '<div class="text-area">';
+                        html += '<input type="text" value="' + area[4] + '" id="text_' + index + '">';
+                        html += '<input type="color" value="' + rgbToHex(area[5]) + '" id="color_' + index + '">';
+                        html += '</div>';
+                    });
+                    
+                    html += '<button onclick="updateImage()">Update Image</button>';
+                    
+                    $('#imageResult').html(html);
+                }
+            });
+        }
+
+        function updateImage() {
+            const formData = new FormData();
+            formData.append('image', originalImage);
+            formData.append('text_areas', JSON.stringify(textAreas));
+            
+            const newTexts = [];
+            const colors = [];
+            $('.text-area').each(function(index) {
+                newTexts.push($('#text_' + index).val());
+                colors.push(hexToRgb($('#color_' + index).val()));
+            });
+            
+            formData.append('new_texts', JSON.stringify(newTexts));
+            formData.append('colors', JSON.stringify(colors));
+            
+            // Debug output
+            $('#debug').html('Sending data: ' + 
+                '<br>Image data length: ' + originalImage.length +
+                '<br>Text areas: ' + JSON.stringify(textAreas) +
+                '<br>New texts: ' + JSON.stringify(newTexts) +
+                '<br>Colors: ' + JSON.stringify(colors)
+            );
+            
+            $.ajax({
+                url: '/update_image',
+                type: 'POST',
+                data: formData,
+                processData: false,
+                contentType: false,
+                success: function(data) {
+                    if (data.error) {
+                        $('#error').text('Error: ' + data.error);
+                    } else {
+                        $('#error').text('');  // Clear any previous error
+                        $('#imageResult').html('<h3>Updated Image:</h3><img src="data:image/png;base64,' + data.updated_image + '" style="max-width:100%;">');
+                    }
+                },
+                error: function(jqXHR, textStatus, errorThrown) {
+                    $('#error').text('Error: ' + textStatus + ' - ' + errorThrown);
+                    console.error('Response:', jqXHR.responseText);
+                }
+            });
+        }
+
+        function rgbToHex(rgb) {
+            return "#" + rgb.map(x => {
+                const hex = x.toString(16);
+                return hex.length === 1 ? "0" + hex : hex;
+            }).join('');
+        }
+
+        function hexToRgb(hex) {
+            const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+            return result ? [
+                parseInt(result[1], 16),
+                parseInt(result[2], 16),
+                parseInt(result[3], 16)
+            ] : null;
+        }
+
+    </script>
+</body>
+</html>

@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Fetched Result</title>
+    <style>
+        body {
+            display: flex;
+            min-height: 100vh;
+            margin: 0;
+            font-family: Arial, sans-serif;
+        }
+        .sidebar {
+            width: 200px;
+            background-color: #f4f4f4;
+            padding: 10px;
+            box-shadow: 2px 0 5px rgba(0, 0, 0, 0.1);
+            overflow-y: auto;
+            max-height: 100vh; /* Set the maximum height of the sidebar */
+        }
+        .sidebar img {
+            width: 100%;
+            cursor: pointer;
+            margin-bottom: 10px;
+            object-fit: cover; /* Maintain aspect ratio */
+        }
+        .main {
+            flex: 1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            padding: 20px;
+            overflow: hidden; /* Hide scrollbars in the main area */
+        }
+        .main img {
+            max-width: 100%;
+            max-height: 80vh; /* Ensure image fits within viewport height */
+            height: auto;
+            overflow: hidden; /* Hide scrollbars */
+        }
+        .image-container {
+            max-width: 100%;
+            max-height: 100%;
+            overflow: hidden; /* Hide scrollbars */
+            text-align: center;
+        }
+        .menu {
+            margin-top: 20px;
+        }
+        .menu button {
+            margin: 0 5px;
+        }
+    </style>
+    <script>
+        function displayImage(src) {
+            document.getElementById('mainImage').src = src;
+            document.getElementById('exportImageLink').href = src;
+        }
+    </script>
+</head>
+<body>
+    <div class="sidebar">
+        {% for screenshot in screenshots %}
+            <img src="{{ url_for('static', filename='enlarged/' + screenshot) }}" alt="Thumbnail" onclick="displayImage('{{ url_for('static', filename='enlarged/' + screenshot) }}')">
+        {% endfor %}
+    </div>
+    <div class="main">
+        <h1>Fetched Result</h1>
+        <div class="image-container">
+            <img id="mainImage" src="{{ url_for('static', filename='enlarged/' + screenshots[0]) }}" alt="Fetched Page">
+        </div>
+        <div class="menu">
+            <a id="exportImageLink" href="{{ url_for('static', filename='enlarged/' + screenshots[0]) }}" download="FetchedImage.png">Export Current Image</a>
+            <a href="/export_image/stitched_image.png">Export Stitched Image</a>
+            <a href="/export_html">Export as HTML</a>
+        </div>
+    </div>
+</body>
+</html>

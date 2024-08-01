@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Exported Page</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+        }
+        .container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+        .container img {
+            max-width: 80%; /* Adjust the size of the images */
+            height: auto;
+            margin-bottom: 20px;
+            border: 1px solid #ddd; /* Optional: Add a border to images */
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); /* Optional: Add a shadow to images */
+        }
+    </style>
+</head>
+<body>
+    <h1>Exported Pages</h1>
+    <div class="container">
+        {% for screenshot in screenshots %}
+            <img src="file://{{ screenshot }}" alt="Screenshot">
+        {% endfor %}
+    </div>
+</body>
+</html>
